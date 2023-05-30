@@ -3,23 +3,25 @@
 %%        rel="license"
 %%        href="http://creativecommons.org/licenses/by/4.0/"
 %%        target="_blank">
+%%        Creative Commons Attribution 4.0 International License</a>
+%%
 %%
 %% These solutions are not intended to be ideal solutions. Instead,
 %% they are a solution that you can compare against yours to see
 %% other options and to come up with even better solutions.
--module(update_location_server).
+-module(request_package_server).
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,set_friends_for/2]).
+-export([start_link/0,stop/0,get_friends_of/1]).
 
-% %% gen_server callbacks
+%% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE). 
 
-% -record(state, {}).
+%-record(state, {}).
 
 %%%===================================================================
 %%% API
@@ -45,13 +47,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 stop() -> gen_server:call(?MODULE, stop).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Stops the server gracefully
-%% @spec start -> {ok, Pid} | ignore | {error, Error}
-%% @end
-%%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+get_friends_of(Name)-> gen_server:call(?MODULE, {friends_of,Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -69,14 +65,15 @@ set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Frien
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-	riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+	%{Success, Riak_PID} = riakc_pb_socket:start_link("rdb.fordark.org", 8087).
+    	case riakc_pb_socket:start_link("rdb.fordark.org", 8087) of 
+	     {ok,Riak_Pid} -> {ok,Riak_Pid};
+	     _ -> {stop,link_failure}
+	end.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Handling call messages. The Request parameter is a tuple
-%% consisting of a command, a binary that is the name of the person 
-%% for which friends are to be stored, and a binary that is a list 
-%% of friends. Both of these binaries can be created using term_to_binary.
+%% Handling call messages
 %%
 %% @spec handle_call(Request, From, State) ->
 %%                                   {reply, Reply, State} |
@@ -87,11 +84,16 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call(some_atom, _From, {Package_UUID, Location_UUID, Time}) ->
-	% Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
-	% {reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
-    ok;
-handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
+handle_call({friends_of,Name}, _From, Riak_PID) ->
+    	%{reply,<<bob,sue,alice>>,Riak_PID};
+	case riakc_pb_socket:get(Riak_PID, <<"friends">>, Name) of 
+	    {ok,Fetched}->
+		%reply with the value as a binary, not the key nor the bucket.
+		{reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
+	     Error ->
+		{reply,Error,Riak_PID}
+	end;
+handle_call(stop, _From, _State) ->
 	{stop,normal,
                 server_stopped,
           down}. %% setting the server's internal state to down
@@ -152,6 +154,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 
+
+
 %%%===================================================================
 %%% Eunit Tests
 %%%===================================================================
@@ -160,19 +164,11 @@ code_change(_OldVsn, State, _Extra) ->
 handle_update_test_()->
     [
         ?_assertEqual({reply,
-            {ok}},
-        update_location_server:handle_call(arrived, somewhere, {"123", "456", 0})),
+            {lat, lon, eta, history}},
+        update_location_server:handle_call(request_location, somewhere, {"123"})),
 
         ?_assertEqual({reply,
-            {ok}},
-        update_location_server:handle_call(departed, somewhere, {"123", "789", 0})),
-
-        ?_assertEqual({reply,
-            {ok}},
-        update_location_server:handle_call(delivered, somewhere, {"123", 0})),
-
-        ?_assertEqual({reply,
-            {ok}},
-        update_location_server:handle_call(mojave_desert, somewhere, {"123", "234", 1970})) %% Error Path
-    ].
+			{lat, lon, eta, history}},
+        update_location_server:handle_call(mojave_desert, somewhere, {"123"}))
+	].
 -endif.
