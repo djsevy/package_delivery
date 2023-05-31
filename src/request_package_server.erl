@@ -162,13 +162,24 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
     -include_lib("eunit/include/eunit.hrl").
 handle_update_test_()->
-    [
+    {setup,
+		fun()-> meck:new(request_package), 
+				meck:new(request_vehicle), 
+				meck:expect(request_package, new)
+		end,
+		fun(_)-> meck:unload(request_package), meck:unload(request_vehicle)
+		end,
+	[
         ?_assertEqual({reply,
             {lat, lon, eta, history}},
         update_location_server:handle_call(request_location, somewhere, {"123"})),
 
-        ?_assertEqual({reply,
-			{lat, lon, eta, history}},
-        update_location_server:handle_call(mojave_desert, somewhere, {"123"}))
-	].
+        ?_assertThrow({badcommand,
+			mojave_desert},
+        update_location_server:handle_call(mojave_desert, somewhere, {"123"})),
+
+		?_assertError({badarg,
+			{"123", "456"}},
+        update_location_server:handle_call(request_location, somewhere, {"123", "456"}))
+	]}.
 -endif.

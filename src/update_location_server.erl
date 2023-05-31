@@ -171,8 +171,18 @@ handle_update_test_()->
             {ok}},
         update_location_server:handle_call(delivered, somewhere, {"123", 0})),
 
-        ?_assertEqual({reply,
-            {ok}},
-        update_location_server:handle_call(mojave_desert, somewhere, {"123", "234", 1970})) %% Error Path
+        ?_assertThrow({badcommand,
+            mojave_desert},
+        update_location_server:handle_call(mojave_desert, somewhere, {"123", "234", 1970})), %% Error Path
+
+        ?_assertError({badmatch,{"123", 0}},
+        update_location_server:handle_call(departed, somewhere, {"123", 0})), %% Error Path
+        
+        ?_assertError({badmatch,{"123", "457", 0}},
+        update_location_server:handle_call(delivered, somewhere, {"123", "457", 0})), %% Error Path
+        
+        ?_assertError({badmatch,{"123", 0}},
+        update_location_server:handle_call(arrived, somewhere, {"123", 0})) %% Error Path
+
     ].
 -endif.

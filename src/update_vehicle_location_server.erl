@@ -106,8 +106,9 @@ handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, State) ->
-    {noreply, State}.
+handle_cast(_Msg, _State) ->
+    % {_,_,_,_} = Msg,
+    {noreply, []}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -163,23 +164,23 @@ handle_update_test_()->
         update_vehicle_location_server:handle_cast(
         {"123",35.0110, 115.4734, 0}, [])),
 
-        ?_assertEqual({noreply, []},
+        ?_assertError({badmatch,{"123",1970}},
         update_vehicle_location_server:handle_cast(
         {"123", 1970}, [])), %% Error Path
 
-        ?_assertEqual({noreply, []},
+        ?_assertThrow({badarg, {"123",35.0110, dogfarmer, 0}},
         update_vehicle_location_server:handle_cast(
         {"123",35.0110, dogfarmer, 0}, [])), %% Error Path
 
-        ?_assertEqual({noreply, []},
+        ?_assertThrow({badarg, {"123",badatom, 115.4734, 0}},
         update_vehicle_location_server:handle_cast(
         {"123",badatom, 115.4734, 0}, [])), %% Error Path
 
-        ?_assertEqual({noreply, []},
+        ?_assertThrow({badarg, {oopsallberries,35.0110, 115.4734, 0}},
         update_vehicle_location_server:handle_cast(
         {oopsallberries,35.0110, 115.4734, 0}, [])), %% Error Path
 
-        ?_assertEqual({noreply, []},
+        ?_assertThrow({badarg, {"123",35.0110, 115.4734, argh}},
         update_vehicle_location_server:handle_cast(
         {"123",35.0110, 115.4734, argh}, []))
 
