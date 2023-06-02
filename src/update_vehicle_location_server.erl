@@ -13,6 +13,8 @@
 %% API
 -export([start_link/0,stop/0,set_friends_for/2]).
 
+-export([get_vehicle/1]).
+
 % %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
@@ -152,7 +154,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-
+get_vehicle(_Vehicle_id) ->
+	ok.
 %%%===================================================================
 %%% Eunit Tests
 %%%===================================================================

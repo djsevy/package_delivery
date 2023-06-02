@@ -19,6 +19,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
+-export([get_package/1]).
+
 -define(SERVER, ?MODULE). 
 
 %-record(state, {}).
@@ -153,6 +155,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+get_package(_Package_id) ->
+	ok.
+
+
+
+
+
 
 
 
@@ -163,11 +172,19 @@ code_change(_OldVsn, State, _Extra) ->
     -include_lib("eunit/include/eunit.hrl").
 handle_update_test_()->
     {setup,
-		fun()-> meck:new(request_package), 
-				meck:new(request_vehicle), 
-				meck:expect(request_package, new)
+		fun()-> meck:new(request_package_server), 
+				meck:new(update_vehicle_location_server),
+				% meck:new(request_eta), 
+				meck:expect(request_package_server, get_package, fun(Package_id) -> {vehicle, history} end),
+				meck:expect(update_vehicle_location_server, get_vehicle, fun(Vehicle_id) -> {lat, lon} end)
+				% meck:expect(request_eta, new, fun(Package_id) -> eta end)
+
+
 		end,
-		fun(_)-> meck:unload(request_package), meck:unload(request_vehicle)
+		fun(_)-> 
+			meck:unload(request_package_server), 
+			meck:unload(update_vehicle_location_server)
+			% meck:unload(request_eta)
 		end,
 	[
         ?_assertEqual({reply,
