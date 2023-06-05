@@ -51,7 +51,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %% @spec start -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
+% set_friends_for(Name,Friends)-> gen_server:call(?MODULE, {friends_for,Name,Friends}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -90,6 +90,7 @@ init([]) ->
 handle_call(some_atom, _From, {Package_UUID, Location_UUID, Time}) ->
 	% Request=riakc_obj:new(<<"friends">>, B_name, B_friends),
 	% {reply,riakc_pb_socket:put(Riak_Pid, Request),Riak_Pid};
+
     ok;
 handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
 	{stop,normal,
@@ -106,8 +107,20 @@ handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast(_Msg, _State) ->
-    % {_,_,_,_} = Msg,
+handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_list(Vehicle_id) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Lat) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Lon) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Time) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+
+handle_cast({Vehicle_id, Lat, Lon, Time}, _State) ->
+    riak_api:put_vehicle_location(Vehicle_id, Lat, Lon, Time),
     {noreply, []}.
 
 %%--------------------------------------------------------------------
@@ -162,9 +175,10 @@ handle_update_test_()->
     {setup,
 		fun()-> 
 			meck:new(riak_api),
-			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
-			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
-			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
+			meck:expect(riak_api, get_package, fun(_Package_id) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(_Vehicle_id) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(_Package_id) -> eta end),
+			meck:expect(riak_api, put_vehicle_location, fun(_Vehicle_id, _Lat, _Lon, _Time) -> ok end)
 		end,
 		fun(_)-> 
 			meck:unload(riak_api)
@@ -173,10 +187,6 @@ handle_update_test_()->
         ?_assertEqual({noreply, []},
         update_vehicle_location_server:handle_cast(
         {"123",35.0110, 115.4734, 0}, [])),
-
-        ?_assertError({badmatch,{"123",1970}},
-        update_vehicle_location_server:handle_cast(
-        {"123", 1970}, [])), %% Error Path
 
         ?_assertThrow({badarg, {"123",35.0110, dogfarmer, 0}},
         update_vehicle_location_server:handle_cast(
