@@ -158,6 +158,16 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
     -include_lib("eunit/include/eunit.hrl").
 handle_update_test_()->
+    {setup,
+		fun()-> 
+			meck:new(riak_api),
+			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
+		end,
+		fun(_)-> 
+			meck:unload(riak_api)
+		end,
     [
         ?_assertEqual({reply,
             {ok}},
@@ -184,5 +194,5 @@ handle_update_test_()->
         ?_assertError({badmatch,{"123", 0}},
         update_location_server:handle_call(arrived, somewhere, {"123", 0})) %% Error Path
 
-    ].
+    ]}.
 -endif.

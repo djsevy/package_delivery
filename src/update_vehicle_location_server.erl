@@ -159,6 +159,16 @@ code_change(_OldVsn, State, _Extra) ->
 -ifdef(EUNIT).
     -include_lib("eunit/include/eunit.hrl").
 handle_update_test_()->
+    {setup,
+		fun()-> 
+			meck:new(riak_api),
+			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
+		end,
+		fun(_)-> 
+			meck:unload(riak_api)
+		end,
     [
         ?_assertEqual({noreply, []},
         update_vehicle_location_server:handle_cast(
@@ -185,5 +195,5 @@ handle_update_test_()->
         {"123",35.0110, 115.4734, argh}, []))
 
 
-    ].
+    ]}.
 -endif.

@@ -172,20 +172,13 @@ code_change(_OldVsn, State, _Extra) ->
 handle_update_test_()->
     {setup,
 		fun()-> 
-				% meck:new(request_package_server), 
-				meck:new(riak_get),
-				% meck:new(request_eta), 
-				% meck:expect(request_package_server, get_package, fun(Package_id) -> {vehicle, history} end),
-				meck:expect(riak_get, get_package, fun(Package_id) -> {vehicle, history} end),
-				meck:expect(riak_get, get_vehicle, fun(Vehicle_id) -> {lat, lon} end)
-				% meck:expect(request_eta, new, fun(Package_id) -> eta end)
-
-
+			meck:new(riak_api),
+			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
 		end,
 		fun(_)-> 
-			% meck:unload(request_package_server),
-			meck:unload(riak_get)
-			% meck:unload(request_eta)
+			meck:unload(riak_api)
 		end,
 	[
         ?_assertEqual({reply,
