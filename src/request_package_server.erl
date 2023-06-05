@@ -49,7 +49,7 @@ start_link() ->
 %%--------------------------------------------------------------------
 stop() -> gen_server:call(?MODULE, stop).
 
-get_friends_of(Name)-> gen_server:call(?MODULE, {friends_of,Name}).
+% get_friends_of(Name)-> gen_server:call(?MODULE, {friends_of,Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -86,16 +86,18 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({friends_of,Name}, _From, Riak_PID) ->
+handle_call({request_location, Package_id}, _From, Riak_PID) ->
+ok;
     	%{reply,<<bob,sue,alice>>,Riak_PID};
-	case riakc_pb_socket:get(Riak_PID, <<"friends">>, Name) of 
-	    {ok,Fetched}->
+	% case riakc_pb_socket:get(Riak_PID, <<"friends">>, Name) of 
+	%     {ok,Fetched}->
 		%reply with the value as a binary, not the key nor the bucket.
-		{reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
-	     Error ->
-		{reply,Error,Riak_PID}
-	end;
-handle_call(stop, _From, _State) ->
+		% {reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
+	    %  Error ->
+		% {reply,Error,Riak_PID}
+	% end;
+% handle_call(stop, _From, _State) ->
+handle_call(_, _From, _State) ->
 	{stop,normal,
                 server_stopped,
           down}. %% setting the server's internal state to down
@@ -183,14 +185,14 @@ handle_update_test_()->
 	[
         ?_assertEqual({reply,
             {lat, lon, eta, history}},
-        update_location_server:handle_call(request_location, somewhere, {"123"})),
+        update_location_server:handle_call({request_location, "123"}, somewhere, riakpid)),
 
         ?_assertThrow({badcommand,
-			mojave_desert},
-        update_location_server:handle_call(mojave_desert, somewhere, {"123"})),
+			{mojave_desert, "123"}},
+        update_location_server:handle_call({mojave_desert, "123"}, somewhere, riakpid)),
 
-		?_assertError({badarg,
-			{"123", "456"}},
-        update_location_server:handle_call(request_location, somewhere, {"123", "456"}))
+		?_assertThrow({badarg,
+		{request_location, badjunkatom}},
+        update_location_server:handle_call({request_location, badjunkatom}, somewhere, riakpid))
 	]}.
 -endif.
