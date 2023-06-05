@@ -13,13 +13,13 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,stop/0,get_friends_of/1]).
+-export([start_link/0,stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--export([get_package/1]).
+% -export([get_package/1]).
 
 -define(SERVER, ?MODULE). 
 
@@ -155,8 +155,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-get_package(_Package_id) ->
-	ok.
+
 
 
 
@@ -169,21 +168,23 @@ get_package(_Package_id) ->
 %%% Eunit Tests
 %%%===================================================================
 -ifdef(EUNIT).
-    -include_lib("eunit/include/eunit.hrl").
+ -include_lib("eunit/include/eunit.hrl").
 handle_update_test_()->
     {setup,
-		fun()-> meck:new(request_package_server), 
-				meck:new(update_vehicle_location_server),
+		fun()-> 
+				% meck:new(request_package_server), 
+				meck:new(riak_get),
 				% meck:new(request_eta), 
-				meck:expect(request_package_server, get_package, fun(Package_id) -> {vehicle, history} end),
-				meck:expect(update_vehicle_location_server, get_vehicle, fun(Vehicle_id) -> {lat, lon} end)
+				% meck:expect(request_package_server, get_package, fun(Package_id) -> {vehicle, history} end),
+				meck:expect(riak_get, get_package, fun(Package_id) -> {vehicle, history} end),
+				meck:expect(riak_get, get_vehicle, fun(Vehicle_id) -> {lat, lon} end)
 				% meck:expect(request_eta, new, fun(Package_id) -> eta end)
 
 
 		end,
 		fun(_)-> 
-			meck:unload(request_package_server), 
-			meck:unload(update_vehicle_location_server)
+			% meck:unload(request_package_server),
+			meck:unload(riak_get)
 			% meck:unload(request_eta)
 		end,
 	[
