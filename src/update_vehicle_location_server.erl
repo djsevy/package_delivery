@@ -107,20 +107,20 @@ handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_list(Vehicle_id) ->
-    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_list(Vehicle_id) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
 
-handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Lat) ->
-    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Lat) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
 
-handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Lon) ->
-    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Lon) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
 
-handle_cast({Vehicle_id, Lat, Lon, Time}, _State) when not is_number(Time) ->
-    throw({badarg, {Vehicle_id, Lat, Lon, Time}});
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) when not is_number(Time) ->
+    throw({badarg, {Vehicle_id, Lat, Lon, Time, Riak_PID}});
 
-handle_cast({Vehicle_id, Lat, Lon, Time}, _State) ->
-    riak_api:put_vehicle_location(Vehicle_id, Lat, Lon, Time),
+handle_cast({Vehicle_id, Lat, Lon, Time, Riak_PID}, _State) ->
+    riak_api:put_vehicle_location(Vehicle_id, Lat, Lon, Time, Riak_PID),
     {noreply, []}.
 
 %%--------------------------------------------------------------------
@@ -186,23 +186,23 @@ handle_update_test_()->
     [
         ?_assertEqual({noreply, []},
         update_vehicle_location_server:handle_cast(
-        {"123",35.0110, 115.4734, 0}, [])),
+        {"123",35.0110, 115.4734, 0, riakpid}, [])),
 
-        ?_assertThrow({badarg, {"123",35.0110, dogfarmer, 0}},
+        ?_assertThrow({badarg, {"123",35.0110, dogfarmer, 0, riakpid}},
         update_vehicle_location_server:handle_cast(
-        {"123",35.0110, dogfarmer, 0}, [])), %% Error Path
+        {"123",35.0110, dogfarmer, 0, riakpid}, [])), %% Error Path
 
-        ?_assertThrow({badarg, {"123",badatom, 115.4734, 0}},
+        ?_assertThrow({badarg, {"123",badatom, 115.4734, 0, riakpid}},
         update_vehicle_location_server:handle_cast(
-        {"123",badatom, 115.4734, 0}, [])), %% Error Path
+        {"123",badatom, 115.4734, 0, riakpid}, [])), %% Error Path
 
-        ?_assertThrow({badarg, {oopsallberries,35.0110, 115.4734, 0}},
+        ?_assertThrow({badarg, {oopsallberries, 35.0110, 115.4734, 0, riakpid}},
         update_vehicle_location_server:handle_cast(
-        {oopsallberries,35.0110, 115.4734, 0}, [])), %% Error Path
+        {oopsallberries,35.0110, 115.4734, 0, riakpid}, [])), %% Error Path
 
-        ?_assertThrow({badarg, {"123",35.0110, 115.4734, argh}},
+        ?_assertThrow({badarg, {"123",35.0110, 115.4734, argh, riakpid}},
         update_vehicle_location_server:handle_cast(
-        {"123",35.0110, 115.4734, argh}, []))
+        {"123",35.0110, 115.4734, argh, riakpid}, []))
 
 
     ]}.

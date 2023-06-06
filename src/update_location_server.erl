@@ -93,10 +93,8 @@ handle_call(departed, _From, {Package_UUID, Location_UUID, Time}) ->
     {reply,ok};
 handle_call(delivered, _From, {Package_UUID, Time}) ->
     {reply,ok};
-handle_call(_, _From, {Package_UUID, Location_UUID, Time}) ->
-	{stop,normal,
-                server_stopped,
-          down}. %% setting the server's internal state to down
+handle_call(Cmd, _From, Parameters) ->
+    throw({badcommand, Cmd, Parameters}).
 
 %%--------------------------------------------------------------------
 %% @private
@@ -184,7 +182,7 @@ handle_update_test_()->
         update_location_server:handle_call(delivered, somewhere, {"123", 0})),
 
         ?_assertThrow({badcommand,
-            mojave_desert},
+            mojave_desert, {"123", "234", 1970}},
         update_location_server:handle_call(mojave_desert, somewhere, {"123", "234", 1970})) %% Error Path
 
         %?_assertError({badmatch,{"123", 0}},
