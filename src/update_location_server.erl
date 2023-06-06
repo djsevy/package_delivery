@@ -163,9 +163,9 @@ handle_update_test_()->
     {setup,
 		fun()-> 
 			meck:new(riak_api),
-			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
-			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
-			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
+			meck:expect(riak_api, get_package, fun(Package_id, Riak_PID) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id, Riak_PID) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id, Riak_PID) -> eta end)
 		end,
 		fun(_)-> 
 			meck:unload(riak_api)

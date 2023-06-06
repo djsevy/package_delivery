@@ -86,22 +86,32 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({request_location, Package_id}, _From, Riak_PID) ->
-ok;
-    	%{reply,<<bob,sue,alice>>,Riak_PID};
+handle_call(request_location, _From, {Package_id, _Riak_PID}) when not is_list(Package_id) ->
+	throw({badarg, {request_location, Package_id}});
+
+
+
+handle_call(request_location, _From, {Package_id, Riak_PID}) ->
+	
+	{Vehicle_id, History} = riak_api:get_package(Package_id, Riak_PID),
+	{Lat, Lon} = riak_api:get_vehicle(Vehicle_id, Riak_PID),
+	{Eta} = riak_api:get_eta(Package_id, Riak_PID),
+	{reply, {Lat, Lon, Eta, History}};
+
+
+handle_call(Cmd, _From, {Package_id, _Riak_PID}) ->
+	throw({badcommand, {Cmd, Package_id}}).
+
+
+
+    % 	{reply,<<bob,sue,alice>>,Riak_PID};
 	% case riakc_pb_socket:get(Riak_PID, <<"friends">>, Name) of 
 	%     {ok,Fetched}->
-		%reply with the value as a binary, not the key nor the bucket.
-		% {reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
-	    %  Error ->
-		% {reply,Error,Riak_PID}
+	% 	reply with the value as a binary, not the key nor the bucket.
+	% 	{reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
+	%      Error ->
+	% 	{reply,Error,Riak_PID}
 	% end;
-% handle_call(stop, _From, _State) ->
-handle_call(_, _From, _State) ->
-	{stop,normal,
-                server_stopped,
-          down}. %% setting the server's internal state to down
-
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -175,9 +185,9 @@ handle_update_test_()->
     {setup,
 		fun()-> 
 			meck:new(riak_api),
-			meck:expect(riak_api, get_package, fun(Package_id) -> {vehicle, history} end),
-			meck:expect(riak_api, get_vehicle, fun(Vehicle_id) -> {lat, lon} end),
-			meck:expect(riak_api, get_eta, fun(Package_id) -> eta end)
+			meck:expect(riak_api, get_package, fun(Package_id,Riak_PID) -> {vehicle, history} end),
+			meck:expect(riak_api, get_vehicle, fun(Vehicle_id, Riak_PID) -> {lat, lon} end),
+			meck:expect(riak_api, get_eta, fun(Package_id, Riak_PID) -> {eta} end)
 		end,
 		fun(_)-> 
 			meck:unload(riak_api)
@@ -185,14 +195,14 @@ handle_update_test_()->
 	[
         ?_assertEqual({reply,
             {lat, lon, eta, history}},
-        update_location_server:handle_call({request_location, "123"}, somewhere, riakpid)),
+        request_package_server:handle_call(request_location, somewhere, {"123", riakpid})),
 
         ?_assertThrow({badcommand,
 			{mojave_desert, "123"}},
-        update_location_server:handle_call({mojave_desert, "123"}, somewhere, riakpid)),
+        request_package_server:handle_call(mojave_desert, somewhere, {"123", riakpid})),
 
 		?_assertThrow({badarg,
 		{request_location, badjunkatom}},
-        update_location_server:handle_call({request_location, badjunkatom}, somewhere, riakpid))
+        request_package_server:handle_call(request_location, somewhere, {badjunkatom, riakpid}))
 	]}.
 -endif.
